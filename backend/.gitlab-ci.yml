@@ -1,0 +1,33 @@
+stages:
+  - "test"
+
+.test-template:
+  stage: test
+  image: ghcr.io/astral-sh/uv:0.9.12-python3.13-bookworm-slim
+  tags:
+    - kubernetes-runner
+    - docker-runner
+  except:
+    - tags
+  before_script:
+    - apt update && apt install -y git
+    - uv sync
+
+black:
+  extends:
+    - .test-template
+  script:
+    - pre-commit run ruff-format -a
+
+ruff:
+  extends:
+    - .test-template
+  script:
+    - pre-commit run ruff -a
+
+mypy:
+  extends:
+    - .test-template
+  script:
+    - pre-commit run mypy -a
+

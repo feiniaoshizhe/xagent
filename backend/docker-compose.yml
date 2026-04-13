@@ -1,0 +1,91 @@
+services:
+  api: &main_app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: xagent:${XAGENT_VERSION:-latest}
+    restart: always
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rmq:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      XAGENT_HOST: 0.0.0.0
+      XAGENT_DB_HOST: xagent-db
+      XAGENT_DB_PORT: 3306
+      XAGENT_DB_USER: xagent
+      XAGENT_DB_PASS: xagent
+      XAGENT_DB_BASE: xagent
+      XAGENT_RABBIT_HOST: xagent-rmq
+      XAGENT_REDIS_HOST: xagent-redis
+
+  db:
+    image: mysql:8.4
+    hostname: xagent-db
+    restart: always
+    environment:
+      MYSQL_USER: "xagent"
+      MYSQL_PASSWORD: "xagent"
+      MYSQL_DATABASE: "xagent"
+      MYSQL_ROOT_PASSWORD: "xagent"
+      MYSQL_HOST: "0.0.0.0"
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - --user=xagent
+        - --password=xagent
+      interval: 10s
+      timeout: 5s
+      retries: 40
+    volumes:
+      - "xagent-db-data:/var/lib/mysql"
+
+  migrator:
+    <<: *main_app
+    restart: "no"
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: redis:8.4.0
+    hostname: "xagent-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+
+  rmq:
+    image: rabbitmq:4.2.1-management-alpine
+    hostname: "xagent-rmq"
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+      RABBITMQ_DEFAULT_VHOST: "/"
+    healthcheck:
+      test: rabbitmq-diagnostics check_running -q
+      interval: 3s
+      timeout: 3s
+      retries: 50
+
+
+
+volumes:
+  xagent-db-data:
+    name: xagent-db-data
