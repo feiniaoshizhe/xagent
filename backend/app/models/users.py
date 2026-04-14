@@ -11,8 +11,8 @@ from fastapi_users.db import SQLAlchemyBaseUserTableUUID, SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.settings import settings
-from app.core.db.base import Base
-from app.core.db.dependencies import get_db_session
+from app.models.base import Base
+from app.routes.dependencies import get_db_session
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):

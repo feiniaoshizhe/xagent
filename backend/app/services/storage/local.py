@@ -103,3 +103,5 @@ class LocalStorageService:
         target = self._resolve(prefix)
         if target.exists():
             shutil.rmtree(target, ignore_errors=True)
+
+storage = LocalStorageService()

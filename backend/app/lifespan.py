@@ -3,20 +3,27 @@ from typing import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from xagent.settings import settings
-from prometheus_fastapi_instrumentator.instrumentation import \
-    PrometheusFastApiInstrumentator
-from xagent.services.redis.lifespan import (init_redis,
-                                                                   shutdown_redis)
-from xagent.services.rabbit.lifespan import (init_rabbit,
-                                                                    shutdown_rabbit)
+from app.common.settings import settings
+from prometheus_fastapi_instrumentator.instrumentation import PrometheusFastApiInstrumentator
+from app.services.redis.lifespan import (
+    init_redis,
+    shutdown_redis
+)
+from app.services.rabbit.lifespan import (
+    init_rabbit,
+    shutdown_rabbit
+)
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.sdk.resources import (DEPLOYMENT_ENVIRONMENT, SERVICE_NAME,
-                                         TELEMETRY_SDK_LANGUAGE, Resource)
+from opentelemetry.sdk.resources import (
+    DEPLOYMENT_ENVIRONMENT,
+    SERVICE_NAME,
+    TELEMETRY_SDK_LANGUAGE,
+    Resource
+)
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
@@ -47,6 +54,7 @@ def _setup_db(app: FastAPI) -> None:  # pragma: no cover
     )
     app.state.db_engine = engine
     app.state.db_session_factory = session_factory
+
 def setup_opentelemetry(app: FastAPI) -> None:  # pragma: no cover
     """
     Enables opentelemetry instrumentation.
@@ -134,6 +142,7 @@ def stop_opentelemetry(app: FastAPI) -> None:  # pragma: no cover
     RedisInstrumentor().uninstrument()
     SQLAlchemyInstrumentor().uninstrument()
     AioPikaInstrumentor().uninstrument()
+
 def setup_prometheus(app: FastAPI) -> None:  # pragma: no cover
     """
     Enables prometheus integration.
@@ -167,7 +176,7 @@ async def lifespan_setup(app: FastAPI) -> AsyncGenerator[None, None]:  # pragma:
 
     yield
     await app.state.db_engine.dispose()
-    
+
     await shutdown_redis(app)
     await shutdown_rabbit(app)
     stop_opentelemetry(app)
